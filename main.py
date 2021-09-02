@@ -77,19 +77,18 @@ if args.dataset == 'nih':
             train_data_path = data_path + 'train2_crop0.75_resized256/'
             test_data_path = data_path + 'test2_crop0.75_resized256/'
         else:
-            if args.kfold == 'True':
-                train_data_path = data_path + 'all_resized256/'
-                test_data_path = data_path + 'all_resized256/'
-            else:
-                train_data_path = data_path + 'train2_resized256/'
-                test_data_path = data_path + 'test2_resized256/'
+            train_data_path = data_path + 'all_resized256/'
+            valid_data_path = data_path + 'all_resized256/'
+            test_data_path = data_path + 'all_resized256/'
     
+
     if args.kfold=='True':
         train_csv_path = '/mnt/sda1/project/nih-preprocess/Dataset/kfold_csv/4fold/fold' + str(args.fold_id) + '_train.csv'
         test_csv_path = '/mnt/sda1/project/nih-preprocess/Dataset/kfold_csv/4fold/fold' + str(args.fold_id) + '_test.csv'
     else:
-        train_csv_path = '../processed_data_csv/train_without_nofinding.csv'
-        test_csv_path = '../processed_data_csv/test_without_nofinding.csv'
+        train_csv_path = 'processed_data_csv/train.csv'
+        valid_csv_path = 'processed_data_csv/valid.csv'
+        test_csv_path = 'processed_data_csv/test_without_nofinding.csv'
 
     if args.pretrained == 'True' or args.pretrained == 'true':
         img_transform = transforms.Compose([
@@ -120,6 +119,12 @@ if args.dataset == 'nih':
         root=train_data_path,
         csv_path=train_csv_path,
         transform=img_transform
+    )
+
+    valid_dataset = MyImageFolder(
+        root=valid_data_path,
+        csv_path=valid_csv_path,
+        transform=img_transform_test
     )
 
     test_dataset = MyImageFolder(
@@ -157,6 +162,13 @@ def main():
                                                drop_last=True,
                                                shuffle=True,
                                                pin_memory=True)
+
+    valid_loader = torch.utils.data.DataLoader(dataset=valid_dataset,
+                                              batch_size=args.batch_size,
+                                              num_workers=args.num_workers,
+                                              drop_last=True,
+                                              shuffle=False,
+                                              pin_memory=True)
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                               batch_size=args.batch_size,
@@ -200,6 +212,15 @@ def main():
         model.train(train_loader, epoch)
 
         # evaluate models
+        valid_auc = model.evaluate(valid_loader)
+
+        print(
+            'Epoch [%d/%d] Validation Accuracy on the %s test images:' % (
+                epoch + 1, args.n_epoch, len(valid_dataset)))
+        print('Model1 AUCs:', valid_auc)
+        print('Model1 mean AUC:', sum(valid_auc)/len(valid_auc))
+
+
         test_auc = model.evaluate(test_loader)
 
         print(
