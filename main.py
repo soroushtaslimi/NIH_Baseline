@@ -44,6 +44,7 @@ if args.kfold=='True':
     CHECKPOINT_PATH += '4fold/'
 LOAD_PATH = '../Checkpoints/Densenet121_img128_forget_rateNone_lr0.001_batch76_epoch70.pth'
 
+CHECKPOINT_PATH += 'validation/'
 
 if torch.cuda.is_available():
     device = torch.device('cuda')
