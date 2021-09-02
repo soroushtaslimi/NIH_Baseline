@@ -88,7 +88,7 @@ if args.dataset == 'nih':
         test_csv_path = '/mnt/sda1/project/nih-preprocess/Dataset/kfold_csv/4fold/fold' + str(args.fold_id) + '_test.csv'
     else:
         train_csv_path = 'processed_data_csv/train.csv'
-        valid_csv_path = 'processed_data_csv/valid.csv'
+        valid_csv_path = 'processed_data_csv/validation.csv'
         test_csv_path = 'processed_data_csv/test_without_nofinding.csv'
 
     if args.pretrained == 'True' or args.pretrained == 'true':
