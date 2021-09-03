@@ -16,9 +16,10 @@ from model.multihead import Multihead
 from torchsummary import summary
 
 class Base_Model:
-    def __init__(self, args, train_dataset, device, input_channel, num_classes, num_test_samples, start_checkpoint=None):
+    def __init__(self, args, train_dataset, device, input_channel, num_classes, start_checkpoint=None):
         self.num_classes = num_classes
-        self.num_test_samples = num_test_samples
+        # self.num_test_samples = num_test_samples
+        self.num_data_loader_samples = {}
 
         self.class_weights = None
         
@@ -76,16 +77,27 @@ class Base_Model:
             self.scheduler = start_checkpoint['scheduler']
 
 
+    def num_data_samples(self, data_loader):
+        if data_loader in self.num_data_loader_samples:
+            return self.num_data_loader_samples[data_loader]
+        res = 0
+        for images, labels in data_loader:
+            res += len(labels)
+        self.num_data_loader_samples[data_loader] = res
+        return res
 
-    def evaluate_model(self, test_loader, model):
+
+    def evaluate_model(self, data_loader, model):
         model.eval()  # Change model to 'eval' mode.
 
-        all_outputs = np.empty((self.num_test_samples, self.num_classes), float)
-        all_labels = np.empty((self.num_test_samples, self.num_classes), np.int8)
+        num_samples = self.num_data_samples(data_loader)
+
+        all_outputs = np.empty((num_samples, self.num_classes), float)
+        all_labels = np.empty((num_samples, self.num_classes), np.int8)
 
         cur_ind = 0
 
-        for images, labels in test_loader:
+        for images, labels in data_loader:
             images = images.to(self.device)
             logits = model(images)
             # outputs = F.softmax(logits, dim=1)  # for crossentropy loss
@@ -97,15 +109,15 @@ class Base_Model:
             cur_ind += len(labels)
         
 
-        assert cur_ind == self.num_test_samples
+        assert cur_ind == num_samples
         auc = roc_auc_score(all_labels, all_outputs, average=None)  # alloutputs for multiLabel classification, alloutputs[:, 1] for binary
         return auc
 
 
     # Evaluate the Model
-    def evaluate(self, test_loader):
+    def evaluate(self, data_loader):
         print('Evaluating ...')
-        auc1 = self.evaluate_model(test_loader, self.model)
+        auc1 = self.evaluate_model(data_loader, self.model)
         if self.adjust_lr == 0:
             self.scheduler.step(-sum(auc1)/len(auc1))
         return auc1

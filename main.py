@@ -193,7 +193,8 @@ def main():
         start_checkpoint = torch.load(LOAD_PATH, map_location=device)
         start_epoch = start_checkpoint['epoch']
 
-    model = Base_Model(args, train_dataset, device, input_channel, num_classes, len(test_loader) * args.batch_size, start_checkpoint=start_checkpoint)
+    # num test samples: len(test_loader) * args.batch_size
+    model = Base_Model(args, train_dataset, device, input_channel, num_classes, start_checkpoint=start_checkpoint)
 
     del start_checkpoint
     
