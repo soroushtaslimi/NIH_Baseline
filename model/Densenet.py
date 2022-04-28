@@ -211,13 +211,22 @@ class DenseNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.constant_(m.bias, 0)
 
+        self.gradients = None
+
+    def activations_hook(self, grad):
+        self.gradients = grad
+
     def forward(self, x: Tensor) -> Tensor:
         features = self.features(x)
         out = F.relu(features, inplace=True)
+        out.register_hook(self.activations_hook)
         out = F.adaptive_avg_pool2d(out, (1, 1))
         out = torch.flatten(out, 1)
         out = self.classifier(out)
         return out
+
+    def get_activations_gradient(self):
+        return self.gradients
 
 
 def _load_state_dict(model: nn.Module, model_url: str, progress: bool) -> None:
