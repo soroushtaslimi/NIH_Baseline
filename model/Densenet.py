@@ -219,11 +219,12 @@ class DenseNet(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         features = self.features(x)
         out = F.relu(features, inplace=True)
+        activations = out.detach()
         out.register_hook(self.activations_hook)
         out = F.adaptive_avg_pool2d(out, (1, 1))
         out = torch.flatten(out, 1)
         out = self.classifier(out)
-        return out
+        return out, activations
 
     def get_activations_gradient(self):
         return self.gradients
